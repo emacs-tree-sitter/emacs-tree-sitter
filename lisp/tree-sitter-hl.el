@@ -373,6 +373,21 @@ See `tree-sitter-hl-add-patterns'."
       (setf (map-elt tree-sitter-hl--patterns-alist lang-symbol)
             (append (list patterns) (remove patterns old-list))))))
 
+(defun tree-sitter-hl-dry-up-region (beg end)
+  "Make the highlighting in the region between BEG and END 'permanent'."
+  (let ((pos beg) next)
+    (while (< pos end)
+      ;; Determine the end of the current contiguous block...
+      (setq next (next-single-property-change pos 'face))
+      ;; ... which should be capped to END.
+      (when (or (null next)
+                (> next end))
+        (setq next end))
+      ;; Convert `face' to `font-lock-face'.
+      (when-let ((face (get-text-property pos 'face)))
+        (put-text-property pos next 'font-lock-face face))
+      (setq pos next))))
+
 ;;; ----------------------------------------------------------------------------
 ;;; Internal workings.
 
@@ -533,12 +548,32 @@ If LOUDLY is non-nil, print debug messages."
   "Highlight the region (BEG . END).
 
 This is a wrapper around `tree-sitter-hl--highlight-region' that falls back to
-OLD-FONTIFY-FN when the current buffer doesn't have `tree-sitter-hl-mode'
-enabled. An example is `jupyter-repl-mode', which copies and uses other major
-modes' fontification functions to highlight its input cells. See
-https://github.com/emacs-tree-sitter/elisp-tree-sitter/issues/78#issuecomment-1005987817."
-  (if tree-sitter-hl--query
-      (tree-sitter-hl--highlight-region beg end loudly)
+OLD-FONTIFY-FN in certain situations:
+
+1. When the current buffer doesn't have `tree-sitter-hl-mode' enabled. An
+   example is `jupyter-repl-mode', which copies and uses other major modes'
+   fontification functions to highlight its input cells. See
+   https://github.com/emacs-tree-sitter/elisp-tree-sitter/issues/78#issuecomment-1005987817.
+
+2. When the code to parse and highlight is confined to a single region. The
+   motivating use case parsing and highlighting the current input cell in
+   `jupyter-repl-mode'. See `tree-sitter-get-parse-region-function'."
+  (if (and tree-sitter-hl--query tree-sitter-tree)
+      (if tree-sitter--parse-region
+          ;; Highlight only the region that `tree-sitter' parsed. Use the
+          ;; underlying fontification function for the rest.
+          (pcase-let ((`(,code-beg . ,code-end) tree-sitter--parse-region))
+            (let ((tree-hl-beg (max beg code-beg))
+                  (tree-hl-end (min end code-end)))
+              (if (<= tree-hl-end tree-hl-beg)
+                  (funcall old-fontify-fn beg end loudly)
+                (when (< beg tree-hl-beg)
+                  (funcall old-fontify-fn beg tree-hl-beg loudly))
+                (when (< tree-hl-end end)
+                  (funcall old-fontify-fn tree-hl-end end loudly))
+                (tree-sitter-hl--highlight-region beg end loudly)
+                `(jit-lock-bounds ,beg . ,end))))
+        (tree-sitter-hl--highlight-region beg end loudly))
     (funcall old-fontify-fn beg end loudly)))
 
 (defun tree-sitter-hl--invalidate (&optional old-tree)

@@ -4,6 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+- Added support for parsing and highlighting a single region, to enable `jupyter-repl` [integration](https://github.com/emacs-tree-sitter/elisp-tree-sitter/issues/78).
 
 ## [0.18.0] - 2022-02-12
 - Added APIs to traverse the syntax tree: `tsc-traverse-do`, `tsc-traverse-mapc`, `tsc-traverse-iter`. The traversal is depth-first pre-order.

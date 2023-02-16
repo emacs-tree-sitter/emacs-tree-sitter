@@ -45,7 +45,7 @@ syntax tree. It is run after `tree-sitter-mode-hook'."
 
 (defcustom tree-sitter-after-on-hook nil
   "Functions to call after enabling `tree-sitter-mode'.
-Use this to enable other minor modes that depends on the syntax tree."
+Use this to enable other minor modes that depend on the syntax tree."
   :type 'hook
   :group 'tree-sitter)
 
@@ -63,6 +63,22 @@ Use this to enable other minor modes that depends on the syntax tree."
 
 (defvar-local tree-sitter-language nil
   "Tree-sitter language.")
+
+(defvar-local tree-sitter-get-parse-region-function nil
+  "The function that provides the region to parse.
+
+This is intended to be used by major modes that want to parse code chunks, one
+at a time. An example is `jupyter-repl-mode'.
+
+This function should return a (BEG . END) cons cell. If it returns nil, the
+whole buffer will be parsed. If there is no code chunk to parse, the major mode
+should call `tree-sitter-pause' instead.")
+
+(defvar-local tree-sitter--parse-region nil
+  "The region that corresponds to the current syntax tree.
+Normally this is nil, which means the whole buffer was parsed.
+
+This is non-nil only if `tree-sitter-get-parse-region-function' was set.")
 
 (defvar-local tree-sitter--text-before-change nil)
 
@@ -140,6 +156,19 @@ OLD-LEN is the char length of the old text."
 (defun tree-sitter--do-parse ()
   "Parse the current buffer and update the syntax tree."
   (let ((old-tree tree-sitter-tree))
+    ;; Check and set range restriction (should be provided by the major mode).
+    (when (functionp tree-sitter-get-parse-region-function)
+      (when-let ((region (funcall tree-sitter-get-parse-region-function)))
+        ;; TODO: Check validity.
+        (setq tree-sitter--parse-region region)
+        (tsc-set-included-ranges
+         tree-sitter-parser
+         (pcase-let ((`(,beg . ,end) region))
+           (tsc--save-context
+             (vector (vector (position-bytes beg)
+                             (position-bytes end)
+                             (tsc--point-from-position beg)
+                             (tsc--point-from-position end))))))))
     (setq tree-sitter-tree
           ;; https://github.com/emacs-tree-sitter/elisp-tree-sitter/issues/3
           (tsc--without-restriction
@@ -179,6 +208,25 @@ signal an error."
            (setq err nil))
        (when err
          ,@error-forms))))
+
+(defun tree-sitter-pause ()
+  "Pause incremental parsing in the current bufer.
+This should only be called by major modes that use
+`tree-sitter-get-parse-region-function'.
+
+Functions that depend on the syntax tree will stop working until
+`tree-sitter-resume' is called."
+  (setq tree-sitter-tree nil))
+
+(defun tree-sitter-resume ()
+  "Resume incremental parsing. If it was paused before, do a full parse first."
+  (tree-sitter--do-parse))
+
+;;;###autoload
+(defun tree-sitter-enable (lang-symbol)
+  "Turn on `tree-sitter-mode' for LANG-SYMBOL in the current buffer."
+  (setq tree-sitter-language (tree-sitter-require lang-symbol))
+  (tree-sitter-mode))
 
 ;;;###autoload
 (define-minor-mode tree-sitter-mode
