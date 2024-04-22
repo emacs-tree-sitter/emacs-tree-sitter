@@ -1,7 +1,7 @@
 set -euo pipefail
 
 system=$(uname)
-if [[ $system == "Linux" ]]; then
+if [[ $system == "Linux" ]] || [[ $system == "NetBSD" ]]; then
     ext="so"
 elif [[ $system == "Darwin" ]]; then
     ext="dylib"
