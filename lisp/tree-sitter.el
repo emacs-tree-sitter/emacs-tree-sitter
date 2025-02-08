@@ -55,6 +55,11 @@ Use this to enable other minor modes that depends on the syntax tree."
   :type '(alist :key-type symbol
                 :value-type symbol))
 
+(defcustom tree-sitter-mode-lighter " tree-sitter"
+  "Lighter for command `tree-sitter-mode'."
+  :group 'tree-sitter
+  :type '(string :tag "Lighter"))
+
 (defvar-local tree-sitter-tree nil
   "Tree-sitter syntax tree.")
 
@@ -184,7 +189,7 @@ signal an error."
 (define-minor-mode tree-sitter-mode
   "Minor mode that keeps an up-to-date syntax tree using incremental parsing."
   :init-value nil
-  :lighter " tree-sitter"
+  :lighter tree-sitter-mode-lighter
   :after-hook (when tree-sitter-mode
                 (unless tree-sitter-tree
                   (tree-sitter--do-parse)
