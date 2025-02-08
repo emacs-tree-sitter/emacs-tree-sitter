@@ -10,6 +10,7 @@ mod tree;
 mod node;
 mod cursor;
 mod query;
+mod build;
 
 emacs::plugin_is_GPL_compatible! {}
 

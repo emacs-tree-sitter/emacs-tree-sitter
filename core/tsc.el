@@ -6,7 +6,7 @@
 ;;         Jorge Javier Araya Navarro <jorgejavieran@yahoo.com.mx>
 ;; Keywords: languages tools parsers dynamic-modules tree-sitter
 ;; Homepage: https://github.com/emacs-tree-sitter/elisp-tree-sitter
-;; Version: 0.18.0
+;; Version: 0.19.0
 ;; Package-Requires: ((emacs "25.1"))
 ;; SPDX-License-Identifier: MIT
 
@@ -17,6 +17,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'tsc-obsolete)
 
 (unless (functionp 'module-load)
@@ -24,7 +25,7 @@
 
 ;; Load the dynamic module at compile time as well, to satisfy the byte compiler.
 (eval-and-compile
-  (defconst tsc--dyn-version "0.18.0"
+  (defconst tsc--dyn-version "0.19.0"
     "Required version of the dynamic module `tsc-dyn'.")
   (require 'tsc-dyn-get)
   (tsc-dyn-get-ensure tsc--dyn-version))
@@ -454,6 +455,23 @@ If a step cannot be followed, signal a `tsc--invalid-node-step' error."
             (signal 'tsc--invalid-node-step (list this old-node i new-node))))
         (setq this new-node)))
     this))
+
+(cl-defun tsc-build-parser-from-source (src-path &key generate dst-path)
+  "Build the tree-sitter grammar at SRC-PATH.
+
+If GENERATE is non-nil, the C parser will be generated from the `grammar.js'
+file in the repository root. In most cases, this is not necessary as the C
+parser is typically included in the repository.
+
+DST-PATH specifies whether the build result should be placed. If
+DST-PATH is unset, it will default to the value of
+`tree-sitter-langs-grammar-dir' if bound. Otherwise, an error will be raised."
+  (if-let ((dst-path (or dst-path (bound-and-true-p tree-sitter-langs-grammar-dir))))
+      (tsc--build-parser-from-source
+       (expand-file-name src-path)
+       (expand-file-name dst-path)
+       generate)
+    (user-error "No dst-path provided and `tree-sitter-langs-grammar-dir' is undefined")))
 
 (provide 'tsc)
 ;;; tsc.el ends here

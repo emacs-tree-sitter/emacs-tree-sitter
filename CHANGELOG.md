@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ## [Unreleased]
 - Make button without newline (#259)
 
+## [0.19.0] - 2022-04-27
+- Add `tsc-build-parser-from-source` for building tree sitter grammars locally
+
 ## [0.18.0] - 2022-02-12
 - Added APIs to traverse the syntax tree: `tsc-traverse-do`, `tsc-traverse-mapc`, `tsc-traverse-iter`. The traversal is depth-first pre-order.
 - Improved syntax tree rendering's performance in `tree-sitter-debug`.

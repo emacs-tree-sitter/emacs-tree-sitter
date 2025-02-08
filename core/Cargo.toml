@@ -1,6 +1,6 @@
 [package]
 name = "emacs-tree-sitter"
-version = "0.18.0"
+version = "0.19.0"
 authors = ["Tuấn-Anh Nguyễn <ubolonton@gmail.com>"]
 edition = "2018"
 publish = false
@@ -12,6 +12,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 emacs = "0.18"
+tree-sitter-cli = "0.20"
+tree-sitter-loader = "0.20"
 libloading = "0.7.0"
 tree-sitter = "0.20.0"
 once_cell = "1.7.2"

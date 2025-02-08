@@ -14,6 +14,8 @@ if [[ $* == "watch" ]]; then
 else
     if [[ $* == "integ" ]]; then
         test_mod="tsc-dyn-get-tests.el"
+    elif [[ $* == "build" ]]; then
+        test_mod="tsc-build.el"
     elif [[ $* == "bench" ]]; then
         test_mod="tree-sitter-bench.el"
     else
